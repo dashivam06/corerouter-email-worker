@@ -47,14 +47,19 @@ jobs:
               echo "=========================================="
 
               # ---------- CLONE OR UPDATE REPO ----------
-              if [ ! -d "$APP_DIR/.git" ]; then
-                echo "First deployment detected. Cloning repository..."
-                git clone https://github.com/dashivam06/corerouter-workers.git $APP_DIR
-              else
+              # ---------- CLONE OR UPDATE REPO ----------
+              if [ -d "$APP_DIR/.git" ]; then
                 echo "Repository exists. Pulling latest code..."
                 cd $APP_DIR
                 git fetch origin
                 git reset --hard origin/main
+              else
+                if [ -d "$APP_DIR" ]; then
+                  echo "Folder exists but is not a git repo. Removing..."
+                  rm -rf $APP_DIR
+                fi
+                echo "First deployment detected. Cloning repository..."
+                git clone https://github.com/dashivam06/corerouter-workers.git $APP_DIR
               fi
 
               cd $APP_DIR
