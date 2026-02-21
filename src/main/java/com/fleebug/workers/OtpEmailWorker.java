@@ -2,9 +2,6 @@ package com.fleebug.workers;
 
 import java.io.IOException;
 import java.util.List;
-
-import com.azure.communication.email.EmailClient;
-import com.fleebug.config.MailConfig;
 import com.fleebug.config.RedisConfig;
 import com.fleebug.dto.EmailJobDto;
 import com.fleebug.service.EmailService;
@@ -15,8 +12,8 @@ import redis.clients.jedis.JedisPool;
 public class OtpEmailWorker {
 
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
-    private static final EmailClient emailClient = MailConfig.getEmailClient();
     private static final EmailService emailService = new EmailService();
+    private static final String OTP_EXPIRES_IN = "5 minutes";
 
     public static void main(String[] args) throws IOException {
 
@@ -35,7 +32,7 @@ public class OtpEmailWorker {
 
                     String username = emailJob.getEmail().split("@")[0]; // Extract username from email
 
-                    emailService.sendOtpEmail(emailJob.getEmail(), username , emailJob.getOtp(), String.valueOf(emailJob.getTimestamp()));
+                    emailService.sendOtpEmail(emailJob.getEmail(), username , emailJob.getOtp(),OTP_EXPIRES_IN);
               
                     System.out.println("Sent OTP to " + emailJob.getEmail());
                 } catch (Exception e) {
