@@ -13,7 +13,6 @@ public class OtpEmailWorker {
 
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final EmailService emailService = new EmailService();
-    private static final String OTP_EXPIRES_IN = "5 minutes";
 
     public static void main(String[] args) throws IOException {
 
@@ -32,7 +31,7 @@ public class OtpEmailWorker {
 
                     String username = emailJob.getEmail().split("@")[0]; // Extract username from email
 
-                    emailService.sendOtpEmail(emailJob.getEmail(), username , emailJob.getOtp(),OTP_EXPIRES_IN);
+                    emailService.sendOtpEmail(emailJob.getEmail(), username , emailJob.getOtp(),emailJob.getOtpTtlMinutes());
               
                     System.out.println("Sent OTP to " + emailJob.getEmail());
                 } catch (Exception e) {

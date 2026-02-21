@@ -60,20 +60,20 @@ public class EmailService {
 
 
 
-    public void sendOtpEmail(String toEmail, String username, String otp, String expiresIn) throws IOException {
+    public void sendOtpEmail(String toEmail, String username, String otp, long otpTtlMinutes) throws IOException {
 
         String subject = "CoreRouter — Verification Code";
 
         Map<String, String> values = Map.of(
                 "USERNAME", username,
                 "OTP_CODE", otp,
-                "EXPIRY_TIME", expiresIn);
+                "EXPIRY_TIME", String.valueOf(otpTtlMinutes));
 
         String emailBody = renderHtmlTemplateForUserVariables(VERIFICATION_EMAIL_TEMPLETE_FILENAME, values);
         
         String textBody = "Hi " + username + ",\n\n"
                 + "Your OTP for email verification is: " + otp + "\n\n"
-                + "This code was generated on "+ expiresIn+" and is valid for the next 5 minutes. Please do not share this code with anyone.\n\n"
+                + "This code was generated on "+ otpTtlMinutes+" and is valid for the next 5 minutes. Please do not share this code with anyone.\n\n"
                 + "Best regards,\n"
                 + "CoreRouter Team";
 

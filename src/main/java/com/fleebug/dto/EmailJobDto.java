@@ -19,13 +19,17 @@ public class EmailJobDto {
     @JsonProperty("timestamp")
     private long timestamp;
 
+    @JsonProperty("otpTtlMinutes")
+    private long otpTtlMinutes; 
+
     public EmailJobDto() {}
 
-    public EmailJobDto(String email, String otp, String type, long timestamp) {
+    public EmailJobDto(String email, String otp, String type, long timestamp, long otpTtlMinutes) {
         this.email = email;
         this.otp = otp;
         this.type = type;
         this.timestamp = timestamp;
+        this.otpTtlMinutes = otpTtlMinutes;
     }
 
 
@@ -33,6 +37,7 @@ public class EmailJobDto {
     public String getOtp() { return otp; }
     public String getType() { return type; }
     public long getTimestamp() { return timestamp; }
+    public long getOtpTtlMinutes() { return otpTtlMinutes; }
 
 
     // Convert the object to JSON
