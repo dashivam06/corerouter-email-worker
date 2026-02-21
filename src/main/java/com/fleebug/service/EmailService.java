@@ -18,6 +18,7 @@ import com.fleebug.config.MailConfig;
 public class EmailService {
 
     public static final String EMAIL_TEMPLATE_FOLDER = "src/main/resources/templates/";
+    private final static String VERIFICATION_EMAIL_TEMPLETE_FILENAME = "verify-email.html";
 
     private final static EmailClient emailClient = MailConfig.getEmailClient();
 
@@ -59,24 +60,24 @@ public class EmailService {
 
 
 
-    public void sendOtpEmail(String toEmail, String username, String otp, String timestamp) throws IOException {
+    public void sendOtpEmail(String toEmail, String username, String otp, String expiresIn) throws IOException {
 
-        String subject = "Verify Your Email";
+        String subject = "CoreRouter — Verification Code";
 
         Map<String, String> values = Map.of(
-                "username", username,
-                "otp", otp);
+                "USERNAME", username,
+                "OTP_CODE", otp,
+                "EXPIRY_TIME", expiresIn);
 
-        String emailBody = renderHtmlTemplateForUserVariables("verify-email.html", values);
+        String emailBody = renderHtmlTemplateForUserVariables(VERIFICATION_EMAIL_TEMPLETE_FILENAME, values);
         
         String textBody = "Hi " + username + ",\n\n"
                 + "Your OTP for email verification is: " + otp + "\n\n"
-                + "This code was generated on "+ timestamp+" and is valid for the next 5 minutes. Please do not share this code with anyone.\n\n"
+                + "This code was generated on "+ expiresIn+" and is valid for the next 5 minutes. Please do not share this code with anyone.\n\n"
                 + "Best regards,\n"
                 + "CoreRouter Team";
 
-                System.out.println("I think email was sent to " + toEmail);
-        // sendEmail("noreply@corerouter.com",List.of(toEmail), subject, emailBody, textBody);
+        sendEmail("noreply@corerouter.me",List.of(toEmail), subject, emailBody, textBody);
     }
 
 }
