@@ -23,6 +23,11 @@ public class OtpEmailWorker {
 
                 List<String> job = jedis.brpop(3000, "queue:email");
 
+                if (job == null) {
+                    // No job available, loop again
+                    continue;
+                }
+
                 String value = job.get(1);
 
                 try {

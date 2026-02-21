@@ -1,6 +1,8 @@
 package com.fleebug.service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,7 +19,6 @@ import com.fleebug.config.MailConfig;
 
 public class EmailService {
 
-    public static final String EMAIL_TEMPLATE_FOLDER = "src/main/resources/templates/";
     private final static String VERIFICATION_EMAIL_TEMPLETE_FILENAME = "verify-email.html";
 
     private final static EmailClient emailClient = MailConfig.getEmailClient();
@@ -42,13 +43,20 @@ public class EmailService {
     }
 
 
+    public String loadTemplate(String templateName) throws IOException {
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("templates/" + templateName)) {
+            if (is == null) {
+                throw new IOException("Template not found: " + templateName);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
 
 
     private String renderHtmlTemplateForUserVariables(String templeteFileName, Map<String, String> keyValuePair)
             throws IOException {
-        Path path = Paths.get(EMAIL_TEMPLATE_FOLDER + templeteFileName);
 
-        String fileContent = Files.readString(path);
+        String fileContent = loadTemplate(templeteFileName);
 
         for (Map.Entry<String, String> entry : keyValuePair.entrySet()) {
             fileContent = fileContent.replace("{{" + entry.getKey() + "}}", entry.getValue());
