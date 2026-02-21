@@ -1,22 +1,17 @@
 package com.fleebug.utility;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import io.github.cdimascio.dotenv.Dotenv;
 
 import java.util.Base64;
 
 public class MessageEncryption {
 
-    private static Dotenv dotenv = Dotenv.load();
-
-    private static final String ENCRYPTION_KEY = dotenv.get("ENCRYPTION_KEY");
+    private static final String ENCRYPTION_KEY = System.getenv("ENCRYPTION_KEY");
 
     private static final String ALGORITHM = "AES";
-    private static final int KEY_SIZE = 256;
 
     public static String encrypt(String message) {
         try {
