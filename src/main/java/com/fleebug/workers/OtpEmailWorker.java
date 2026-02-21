@@ -5,6 +5,7 @@ import java.util.List;
 import com.fleebug.config.RedisConfig;
 import com.fleebug.dto.EmailJobDto;
 import com.fleebug.service.EmailService;
+import com.fleebug.utility.MessageEncryption;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -25,7 +26,9 @@ public class OtpEmailWorker {
                 String value = job.get(1);
 
                 try {
-                    EmailJobDto emailJob = EmailJobDto.fromJson(value);
+
+                    String decryptedValue = MessageEncryption.decrypt(value);
+                    EmailJobDto emailJob = EmailJobDto.fromJson(decryptedValue);
 
                     try {
 
