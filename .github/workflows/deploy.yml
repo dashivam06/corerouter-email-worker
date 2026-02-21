@@ -49,7 +49,7 @@ jobs:
                 # ---------- CLONE OR UPDATE REPO ----------
                 if [ ! -d "$APP_DIR/.git" ]; then
                   echo "First deployment detected. Cloning repository..."
-                  git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git $APP_DIR
+                  git clone https://github.com/dashivam06/corerouter-workers.git $APP_DIR
                 else
                   echo "Repository exists. Pulling latest code..."
                   cd $APP_DIR
