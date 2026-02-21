@@ -1,15 +1,12 @@
 package com.fleebug.config;
 
 import java.time.Duration;
-
-import io.github.cdimascio.dotenv.Dotenv;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisConfig {
 
     public static JedisPool jedisPool;
-    public static Dotenv dotenv = Dotenv.load();
 
     static {
 
@@ -22,9 +19,9 @@ public class RedisConfig {
         jedisPoolConfig.setMinEvictableIdleDuration(Duration.ofMinutes(5)); // Idle >5 min can be evicted
         jedisPoolConfig.setTimeBetweenEvictionRuns(Duration.ofMinutes(1)); // Eviction thread runs every 1 min
 
-        String redisHostName = dotenv.get("REDIS_HOST");
-        String redisPassword = dotenv.get("REDIS_PASSWORD");
-        String redisPortStr = dotenv.get("REDIS_PORT");
+        String redisHostName = System.getenv("REDIS_HOST");
+        String redisPassword = System.getenv("REDIS_PASSWORD");
+        String redisPortStr = System.getenv("REDIS_PORT");
 
       
         int redisPort = Integer.parseInt(redisPortStr);
