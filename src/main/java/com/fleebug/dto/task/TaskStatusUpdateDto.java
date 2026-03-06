@@ -9,14 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 
-/**
- * Body sent to PATCH /v1/tasks/status.
- *
- * Examples:
- *   { "taskId": "...", "status": "PROCESSING" }
- *   { "taskId": "...", "status": "COMPLETED", "result": { ... } }
- *   { "taskId": "...", "status": "FAILED",    "result": { "error": "...", "details": "..." } }
- */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,9 +18,12 @@ public class TaskStatusUpdateDto {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @JsonProperty("taskId") private String taskId;
-    @JsonProperty("status") private String status;
-    @JsonProperty("result") private Object result;
+    @JsonProperty("taskId")
+    private String taskId;
+    @JsonProperty("status")
+    private String status;
+    @JsonProperty("result")
+    private Object result;
 
     public String toJson() throws IOException {
         return MAPPER.writeValueAsString(this);
