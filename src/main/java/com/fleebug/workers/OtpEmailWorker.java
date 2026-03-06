@@ -3,7 +3,7 @@ package com.fleebug.workers;
 import java.io.IOException;
 import java.util.List;
 import com.fleebug.config.RedisConfig;
-import com.fleebug.dto.EmailJobDto;
+import com.fleebug.dto.email.EmailJobDto;
 import com.fleebug.service.EmailService;
 import com.fleebug.utility.MessageEncryption;
 
