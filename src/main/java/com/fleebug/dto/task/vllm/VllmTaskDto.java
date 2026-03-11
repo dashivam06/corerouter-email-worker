@@ -1,4 +1,4 @@
-package com.fleebug.dto.task;
+package com.fleebug.dto.task.vllm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

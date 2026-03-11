@@ -3,12 +3,12 @@ package com.fleebug.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fleebug.config.ChatTaskConfig;
-import com.fleebug.dto.task.BillingConfigDto;
-import com.fleebug.dto.task.BillingUsageDto;
-import com.fleebug.dto.task.ModelDto;
-import com.fleebug.dto.task.TaskStatusUpdateDto;
-import com.fleebug.dto.task.VllmChatCompletionRequest;
-import com.fleebug.dto.task.VllmChatCompletionResponse;
+import com.fleebug.dto.task.model.BillingConfigDto;
+import com.fleebug.dto.task.model.BillingUsageDto;
+import com.fleebug.dto.task.model.ModelDto;
+import com.fleebug.dto.task.vllm.TaskStatusUpdateDto;
+import com.fleebug.dto.task.vllm.VllmChatCompletionRequest;
+import com.fleebug.dto.task.vllm.VllmChatCompletionResponse;
 import com.fleebug.utility.Env;
 
 import okhttp3.MediaType;
