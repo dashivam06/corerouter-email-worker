@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Response returned by POST {endpointUrl}/v1/chat/completions.
+ * Response returned by POST {endpointUrl}/v1/completions.
  */
 @Data
 @NoArgsConstructor

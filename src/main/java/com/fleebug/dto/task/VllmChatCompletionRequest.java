@@ -8,8 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -21,8 +19,8 @@ public class VllmChatCompletionRequest {
 
     @JsonProperty("model")
     private String model;
-    @JsonProperty("messages")
-    private List<Map<String, Object>> messages;
+    @JsonProperty("prompt")
+    private String prompt;
     @JsonProperty("temperature")
     private Double temperature;
     @JsonProperty("max_tokens")
