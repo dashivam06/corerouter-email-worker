@@ -3,16 +3,17 @@ package com.fleebug.config;
 import com.azure.communication.email.EmailClient;
 import com.azure.communication.email.EmailClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import com.fleebug.utility.Env;
 
 public class MailConfig {
 
     private static EmailClient emailClient;
 
-    // private static String connectionString = System.getenv("AZURE_COMMUNICATION_COREROUTER_STRING");
+    // private static String connectionString = Env.get("AZURE_COMMUNICATION_COREROUTER_STRING");
 
-    private static String endpoint = System.getenv("AZURE_COMMUNICATION_COREROUTER_ENDPOINT");
+    private static String endpoint = Env.get("AZURE_COMMUNICATION_COREROUTER_ENDPOINT");
 
-    private static String accessKey = System.getenv("AZURE_COMMUNICATION_COREROUTER_ACCESS_KEY");
+    private static String accessKey = Env.get("AZURE_COMMUNICATION_COREROUTER_ACCESS_KEY");
 
     static
     {

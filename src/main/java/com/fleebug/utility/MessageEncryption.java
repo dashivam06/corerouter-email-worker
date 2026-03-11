@@ -9,7 +9,7 @@ import java.util.Base64;
 
 public class MessageEncryption {
 
-    private static final String ENCRYPTION_KEY = System.getenv("ENCRYPTION_KEY");
+    private static final String ENCRYPTION_KEY = Env.get("ENCRYPTION_KEY");
 
     private static final String ALGORITHM = "AES";
 

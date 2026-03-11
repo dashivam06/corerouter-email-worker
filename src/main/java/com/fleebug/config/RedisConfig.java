@@ -1,8 +1,14 @@
 package com.fleebug.config;
 
 import java.time.Duration;
+
+import com.fleebug.utility.Env;
+
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.RedisProtocol;
 
 public class RedisConfig {
 
@@ -19,14 +25,20 @@ public class RedisConfig {
         jedisPoolConfig.setMinEvictableIdleDuration(Duration.ofMinutes(5)); // Idle >5 min can be evicted
         jedisPoolConfig.setTimeBetweenEvictionRuns(Duration.ofMinutes(1)); // Eviction thread runs every 1 min
 
-        String redisHostName = System.getenv("REDIS_HOST");
-        String redisPassword = System.getenv("REDIS_PASSWORD");
-        String redisPortStr = System.getenv("REDIS_PORT");
+        String redisHostName = Env.get("REDIS_HOST");
+        String redisPassword = Env.get("REDIS_PASSWORD");
+        String redisPortStr = Env.get("REDIS_PORT");
 
       
         int redisPort = Integer.parseInt(redisPortStr);
 
-        jedisPool = new JedisPool(jedisPoolConfig, redisHostName, (redisPort), 2000, redisPassword);
+        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+                .password(redisPassword)
+                .timeoutMillis(2000)
+                .protocol(RedisProtocol.RESP2)
+                .build();
+
+        jedisPool = new JedisPool(jedisPoolConfig, new HostAndPort(redisHostName, redisPort), clientConfig);
 
     }
 
