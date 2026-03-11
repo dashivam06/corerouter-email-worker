@@ -2,15 +2,20 @@ package com.fleebug.workers;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fleebug.config.RedisConfig;
 import com.fleebug.config.ChatTaskConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fleebug.dto.task.BillingConfigDto;
-import com.fleebug.dto.task.ModelDto;
-import com.fleebug.dto.task.VllmChatCompletionResponse;
-import com.fleebug.dto.task.VllmTaskDto;
+
+import com.fleebug.dto.task.model.BillingConfigDto;
+import com.fleebug.dto.task.model.ModelDto;
+import com.fleebug.dto.task.vllm.VllmChatCompletionResponse;
+import com.fleebug.dto.task.vllm.VllmTaskDto;
 import com.fleebug.service.VllmChatCompletionService;
 
 import redis.clients.jedis.Jedis;
@@ -27,21 +32,37 @@ public class VllmChatCompletionWorker {
     private static final Logger log = LoggerFactory.getLogger(VllmChatCompletionWorker.class);
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final VllmChatCompletionService service = new VllmChatCompletionService();
+    private static final ExecutorService executor =
+            Executors.newFixedThreadPool(ChatTaskConfig.WORKER_THREADS);
 
-    private static int tasksProcessed = 0;
-    
+    private static final AtomicInteger tasksProcessed = new AtomicInteger(0);
+
 
     public static void main(String[] args) {
         printBanner();
         ensureConsumerGroup();
-        log.info("Listening for tasks on {} ...", ChatTaskConfig.STREAM_KEY);
+        log.info("Listening for tasks on {} (threads={}) ...",
+                ChatTaskConfig.STREAM_KEY, ChatTaskConfig.WORKER_THREADS);
         System.out.println();
 
-        while (true) {
-            String messageId = null;
-            Map<String, String> fields = null;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Shutdown signal received — draining executor ...");
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException ex) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            log.info("Executor stopped.");
+        }));
 
-            // Phase 1: XREADGROUP
+        while (!executor.isShutdown()) {
+            List<StreamEntry> batch = null;
+
+            // Phase 1: XREADGROUP — fetch up to STREAM_READ_COUNT entries
             try (Jedis jedis = jedisPool.getResource()) {
                 Map<String, StreamEntryID> streams = Collections.singletonMap(
                         ChatTaskConfig.STREAM_KEY, StreamEntryID.XREADGROUP_UNDELIVERED_ENTRY);
@@ -59,9 +80,7 @@ public class VllmChatCompletionWorker {
                 for (Map.Entry<String, List<StreamEntry>> stream : result) {
                     List<StreamEntry> entries = stream.getValue();
                     if (entries != null && !entries.isEmpty()) {
-                        StreamEntry entry = entries.get(0);
-                        messageId = entry.getID().toString();
-                        fields = entry.getFields();
+                        batch = entries;
                     }
                 }
             } catch (Exception e) {
@@ -70,21 +89,29 @@ public class VllmChatCompletionWorker {
                 continue;
             }
 
-            if (messageId == null || fields == null) continue;
+            if (batch == null || batch.isEmpty()) continue;
 
-            // Phase 2: Process
-            boolean shouldAck = processTask(messageId, fields);
+            // Phase 2: submit each entry to the thread pool
+            for (StreamEntry entry : batch) {
+                final String messageId = entry.getID().toString();
+                final Map<String, String> fields = entry.getFields();
 
-            // Phase 3: XACK
-            if (shouldAck) {
-                try (Jedis jedis = jedisPool.getResource()) {
-                    jedis.xack(ChatTaskConfig.STREAM_KEY,
-                            ChatTaskConfig.CONSUMER_GROUP,
-                            new StreamEntryID(messageId));
-                    log.info("acked  {}", messageId);
-                } catch (Exception e) {
-                    log.error("ack failed  {} — {}", messageId, e.getMessage());
-                }
+                executor.submit(() -> {
+                    // Process
+                    boolean shouldAck = processTask(messageId, fields);
+
+                    // Phase 3: XACK
+                    if (shouldAck) {
+                        try (Jedis jedis = jedisPool.getResource()) {
+                            jedis.xack(ChatTaskConfig.STREAM_KEY,
+                                    ChatTaskConfig.CONSUMER_GROUP,
+                                    new StreamEntryID(messageId));
+                            log.info("acked  {}", messageId);
+                        } catch (Exception e) {
+                            log.error("ack failed  {} — {}", messageId, e.getMessage());
+                        }
+                    }
+                });
             }
         }
     }
@@ -140,8 +167,7 @@ public class VllmChatCompletionWorker {
             }
 
             // 9. Stats
-            tasksProcessed++;
-            log.info("└── done   {}ms  tokens={}  [#{}]", processingTimeMs, vllmResponse.getTotalTokens(), tasksProcessed);
+            log.info("└── done   {}ms  tokens={}  [#{}]", processingTimeMs, vllmResponse.getTotalTokens(), tasksProcessed.incrementAndGet());
 
             return true; // ACK
 

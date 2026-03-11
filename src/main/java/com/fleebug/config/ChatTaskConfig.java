@@ -28,8 +28,11 @@ public class ChatTaskConfig {
     public static final long API_RETRY_BASE_DELAY_MS = 1000;
 
     // ── Stream read ────────────────────────────────────────────────
-    public static final int STREAM_READ_COUNT = 1;
+    public static final int STREAM_READ_COUNT = 10;
     public static final int STREAM_BLOCK_MS = 5000;
+
+    // ── Concurrency ────────────────────────────────────────────────
+    public static final int WORKER_THREADS = Integer.parseInt(env("WORKER_THREADS", "3"));
 
     private ChatTaskConfig() { }
 
