@@ -3,14 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.fleebug</groupId>
-    <artifactId>corerouter-email-worker</artifactId>
+    <artifactId>corerouter-workers</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>corerouter</name>
-    <description>CoreRouter Email Worker is an asynchronous email processing system built for reliable and 
-                 scalable email delivery in SaaS applications. It decouples email sending from the main 
-                 backend using a Redis based job queue. This prevents API latency and improves system 
-                 resilience.
+    <name>corerouter-workers</name>
+    <description>CoreRouter Workers — asynchronous background workers for CoreRouter SaaS.
+                 Handles email delivery via a Redis-backed job queue, decoupling it from the main API
+                 to improve latency and resilience.
     </description>
 
     <properties>
