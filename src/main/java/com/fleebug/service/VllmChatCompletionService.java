@@ -102,7 +102,11 @@ public class VllmChatCompletionService {
     }
 
     public void updateTaskStatus(String taskId, String status, Object result) throws IOException {
-        TaskStatusUpdateDto body = new TaskStatusUpdateDto(taskId, status, result);
+        updateTaskStatus(taskId, status, result);
+    }
+
+    public void updateTaskStatus(String taskId, String status, Object result, String usageMetadata) throws IOException {
+        TaskStatusUpdateDto body = new TaskStatusUpdateDto(taskId, status, result, usageMetadata);
         String url = ChatTaskConfig.API_BASE_URL + "/v1/tasks/status";
         apiPatch(url, body.toJson());
         log.info("│   status     → {}", status);

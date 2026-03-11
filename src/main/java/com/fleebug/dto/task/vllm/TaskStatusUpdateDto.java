@@ -3,6 +3,8 @@ package com.fleebug.dto.task.vllm;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,7 @@ import java.io.IOException;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskStatusUpdateDto {
@@ -24,6 +27,8 @@ public class TaskStatusUpdateDto {
     private String status;
     @JsonProperty("result")
     private Object result;
+    @JsonProperty("usageMetadata")
+    private String usageMetadata;
 
     public String toJson() throws IOException {
         return MAPPER.writeValueAsString(this);

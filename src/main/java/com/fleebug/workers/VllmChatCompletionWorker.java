@@ -119,7 +119,7 @@ public class VllmChatCompletionWorker {
     /** @return true if should ACK (handled or unrecoverable), false to let PEL redeliver */
     private static boolean processTask(String messageId, Map<String, String> fields) {
         String taskId = null;
-        long startTime = System.currentTimeMillis();
+        long vllmStartedAt = System.currentTimeMillis();
 
         try {
             // 1. Parse
@@ -154,10 +154,15 @@ public class VllmChatCompletionWorker {
             VllmChatCompletionResponse vllmResponse = service.callChatCompletion(
                     model.getEndpointUrl(),(model.getProvider()+"/"+ model.getFullname()), task.getPayload()); // vllm expects model name in format provider/model
 
-            long processingTimeMs = System.currentTimeMillis() - startTime;
+            long vllmProcessingTimeMs = System.currentTimeMillis() - vllmStartedAt;
 
-            // 7. Mark COMPLETED
-            service.updateTaskStatus(taskId, "COMPLETED", vllmResponse);
+            // 7. Mark COMPLETED with usage metadata
+            String usageMetadata = buildUsageMetadata(
+                    vllmProcessingTimeMs,
+                    vllmResponse.getPromptTokens(),
+                    vllmResponse.getCompletionTokens(),
+                    vllmResponse.getTotalTokens());
+            service.updateTaskStatus(taskId, "COMPLETED", vllmResponse, usageMetadata);
 
             // 8. Record billing
             if (billingConfig.isPresent()) {
@@ -167,7 +172,7 @@ public class VllmChatCompletionWorker {
             }
 
             // 9. Stats
-            log.info("└── done   {}ms  tokens={}  [#{}]", processingTimeMs, vllmResponse.getTotalTokens(), tasksProcessed.incrementAndGet());
+            log.info("└── done   {}ms  tokens={}  [#{}]", vllmProcessingTimeMs, vllmResponse.getTotalTokens(), tasksProcessed.incrementAndGet());
 
             return true; // ACK
 
@@ -209,6 +214,21 @@ public class VllmChatCompletionWorker {
         return err;
     }
 
+    private static String buildUsageMetadata(long latencyMs, int promptTokens, int completionTokens, int totalTokens) {
+        double tokensPerSecond = latencyMs > 0 ? (completionTokens * 1000.0) / latencyMs : 0;
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("latencyMs", latencyMs);
+        meta.put("promptTokens", promptTokens);
+        meta.put("completionTokens", completionTokens);
+        meta.put("totalTokens", totalTokens);
+        meta.put("tokensPerSecond", Math.round(tokensPerSecond * 10.0) / 10.0);
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(meta);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private static void ensureConsumerGroup() {
         int maxRetries = 5;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -234,13 +254,13 @@ public class VllmChatCompletionWorker {
     }
 
     private static void printBanner() {
-        System.out.println("╔══════════════════════════════════════════════╗");
+        System.out.println("\n╔══════════════════════════════════════════════╗");
         System.out.println("║         vLLM Chat Completion Worker          ║");
         System.out.println("╚══════════════════════════════════════════════╝");
-        System.out.println("  stream    " + ChatTaskConfig.STREAM_KEY);
-        System.out.println("  group     " + ChatTaskConfig.CONSUMER_GROUP);
-        System.out.println("  consumer  " + ChatTaskConfig.CONSUMER_NAME);
-        System.out.println("  api       " + ChatTaskConfig.API_BASE_URL);
+        System.out.println("  Stream    : " + ChatTaskConfig.STREAM_KEY);
+        System.out.println("  Group     : " + ChatTaskConfig.CONSUMER_GROUP);
+        System.out.println("  Consumer  : " + ChatTaskConfig.CONSUMER_NAME);
+        System.out.println("  Api       : " + ChatTaskConfig.API_BASE_URL);
         System.out.println();
     }
 
