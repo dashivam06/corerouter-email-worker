@@ -31,7 +31,7 @@ jobs:
             set -e
             set -o pipefail
 
-            APP_DIR="/home/rootuser/corerouter-workers"
+            APP_DIR="/home/fleebug/corerouter-workers"
             LOG_DIR="$APP_DIR/logs"
             DEPLOY_LOG="$APP_DIR/deploy-$(date +%s).log"
 
