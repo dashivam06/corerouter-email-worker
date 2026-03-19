@@ -97,19 +97,26 @@ public class VllmChatCompletionWorker {
                 final Map<String, String> fields = entry.getFields();
 
                 executor.submit(() -> {
-                    // Process
-                    boolean shouldAck = processTask(messageId, fields);
+                    try {
+                        // Process
+                        boolean shouldAck = processTask(messageId, fields);
 
-                    // Phase 3: XACK
-                    if (shouldAck) {
-                        try (Jedis jedis = jedisPool.getResource()) {
-                            jedis.xack(ChatTaskConfig.STREAM_KEY,
-                                    ChatTaskConfig.CONSUMER_GROUP,
-                                    new StreamEntryID(messageId));
-                            log.info("acked  {}", messageId);
-                        } catch (Exception e) {
-                            log.error("ack failed  {} — {}", messageId, e.getMessage());
+                        // Phase 3: XACK + XTRIM
+                        if (shouldAck) {
+                            try (Jedis jedis = jedisPool.getResource()) {
+                                jedis.xack(ChatTaskConfig.STREAM_KEY,
+                                        ChatTaskConfig.CONSUMER_GROUP,
+                                        new StreamEntryID(messageId));
+                                // Trim to latest 500 entries (~approximate, efficient)
+                                jedis.xtrim(ChatTaskConfig.STREAM_KEY,
+                                        ChatTaskConfig.STREAM_MAX_LEN, true);
+                                log.info("acked  {}", messageId);
+                            } catch (Exception e) {
+                                log.error("ack failed  {} — {}", messageId, e.getMessage());
+                            }
                         }
+                    } catch (Throwable t) {
+                        log.error("└── FATAL  {} — {}: {}", messageId, t.getClass().getSimpleName(), t.getMessage());
                     }
                 });
             }
@@ -159,9 +166,8 @@ public class VllmChatCompletionWorker {
             // 7. Mark COMPLETED with usage metadata
             String usageMetadata = buildUsageMetadata(
                     vllmProcessingTimeMs,
-                    vllmResponse.getPromptTokens(),
                     vllmResponse.getCompletionTokens(),
-                    vllmResponse.getTotalTokens());
+                    vllmResponse.getModel());
             service.updateTaskStatus(taskId, "COMPLETED", vllmResponse, usageMetadata);
 
             // 8. Record billing
@@ -214,14 +220,12 @@ public class VllmChatCompletionWorker {
         return err;
     }
 
-    private static String buildUsageMetadata(long latencyMs, int promptTokens, int completionTokens, int totalTokens) {
+    private static String buildUsageMetadata(long latencyMs,int completionTokens, String modelName) {
         double tokensPerSecond = latencyMs > 0 ? (completionTokens * 1000.0) / latencyMs : 0;
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("latencyMs", latencyMs);
-        meta.put("promptTokens", promptTokens);
-        meta.put("completionTokens", completionTokens);
-        meta.put("totalTokens", totalTokens);
         meta.put("tokensPerSecond", Math.round(tokensPerSecond * 10.0) / 10.0);
+        meta.put("model", modelName);
         try {
             return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(meta);
         } catch (Exception e) {

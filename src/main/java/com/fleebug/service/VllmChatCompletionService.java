@@ -102,7 +102,7 @@ public class VllmChatCompletionService {
     }
 
     public void updateTaskStatus(String taskId, String status, Object result) throws IOException {
-        updateTaskStatus(taskId, status, result);
+        updateTaskStatus(taskId, status, result, null);
     }
 
     public void updateTaskStatus(String taskId, String status, Object result, String usageMetadata) throws IOException {
