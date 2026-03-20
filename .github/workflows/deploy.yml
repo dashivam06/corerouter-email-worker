@@ -73,13 +73,13 @@ jobs:
               echo "========== Deploying Workers =========="
 
               # ---------- OTP WORKER ----------
-              echo "Deploying OTP Email Worker..."
+              echo "Deploying Corerouter Workers..."
 
-              sudo docker stop otp-email-worker || true
-              sudo docker rm otp-email-worker || true
+              sudo docker stop corerouter-worker || true
+              sudo docker rm corerouter-worker || true
 
               sudo docker run -d \
-                --name otp-email-worker \
+                --name corerouter-worker \
                 --restart unless-stopped \
                 -v $LOG_DIR:/app/logs \
                 -e WORKER_CLASS=com.fleebug.workers.OtpEmailWorker \
@@ -94,9 +94,27 @@ jobs:
 
               echo "OTP Worker started"
 
+              # ---------- VLLM WORKER ----------
+              sudo docker stop corerouter-vllm-worker || true
+              sudo docker rm corerouter-vllm-worker || true
+
+              sudo docker run -d \
+                --name corerouter-vllm-worker \
+                --restart unless-stopped \
+                -v $LOG_DIR:/app/logs \
+                -e WORKER_CLASS=com.fleebug.workers.VllmChatCompletionWorker \
+                -e REDIS_HOST="${{ secrets.REDIS_HOST }}" \
+                -e REDIS_PORT="${{ secrets.REDIS_PORT }}" \
+                -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
+                -e API_BASE_URL="${{ secrets.API_BASE_URL }}" \
+                -e WORKER_SECRET="${{ secrets.WORKER_SECRET }}" \
+                corerouter-workers:latest
+
+              echo "vLLM Worker started"
+
               echo ""
               echo "========== Deployment Complete =========="
 
-              sudo docker ps --filter "name=*-worker"
+              sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep -E "NAMES|corerouter-(vllm-)?worker" || true
 
             } 2>&1 | tee -a $DEPLOY_LOG
