@@ -27,7 +27,7 @@ public class VllmTaskDto {
     @JsonProperty("taskId")   private String taskId;
     @JsonProperty("modelId")  private String modelId;
     @JsonProperty("apiKeyId") private String apiKeyId;
-    @JsonProperty("payload")  private Map<String, Object> payload;
+    @JsonProperty("payload")  private ChatCompletionRequest payload;
     @JsonProperty("timestamp") private String timestamp;
 
     /**
@@ -44,7 +44,7 @@ public class VllmTaskDto {
 
         String payloadJson = fields.get("payload");
         if (payloadJson != null && !payloadJson.isBlank()) {
-            dto.payload = MAPPER.readValue(payloadJson, Map.class);
+            dto.payload = MAPPER.readValue(payloadJson, ChatCompletionRequest.class);
         }
         return dto;
     }

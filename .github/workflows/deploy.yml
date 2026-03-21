@@ -34,6 +34,8 @@ jobs:
             APP_DIR="/home/fleebug/corerouter-workers"
             LOG_DIR="$APP_DIR/logs"
             DEPLOY_LOG="$APP_DIR/deploy-$(date +%s).log"
+            API_BASE_URL="${{ secrets.API_BASE_URL }}"
+            WORKER_SECRET="${{ secrets.WORKER_SECRET }}"
 
             mkdir -p $APP_DIR
             mkdir -p $LOG_DIR
@@ -68,6 +70,17 @@ jobs:
               # ---------- BUILD IMAGE ----------
               echo "Building Docker image"
               sudo docker build -t corerouter-workers:latest .
+
+              # ---------- REQUIRED SECRETS CHECK ----------
+              if [ -z "$API_BASE_URL" ]; then
+                echo "ERROR: Missing required secret API_BASE_URL"
+                exit 1
+              fi
+
+              if [ -z "$WORKER_SECRET" ]; then
+                echo "ERROR: Missing required secret WORKER_SECRET"
+                exit 1
+              fi
 
               echo ""
               echo "========== Deploying Workers =========="
@@ -106,8 +119,8 @@ jobs:
                 -e REDIS_HOST="${{ secrets.REDIS_HOST }}" \
                 -e REDIS_PORT="${{ secrets.REDIS_PORT }}" \
                 -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
-                -e API_BASE_URL="${{ secrets.API_BASE_URL }}" \
-                -e WORKER_SECRET="${{ secrets.WORKER_SECRET }}" \
+                -e API_BASE_URL="$API_BASE_URL" \
+                -e WORKER_SECRET="$WORKER_SECRET" \
                 corerouter-workers:latest
 
               echo "vLLM Worker started"
