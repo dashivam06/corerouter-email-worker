@@ -26,6 +26,7 @@ public class ApiClient {
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(chain -> {
                 IOException lastError = null;
+                String requestUrl = chain.request().url().toString();
                 for (int attempt = 0; attempt < ChatTaskConfig.API_MAX_RETRIES; attempt++) {
                     try {
                         okhttp3.Response res = chain.proceed(chain.request());
@@ -36,13 +37,15 @@ public class ApiClient {
                         lastError = e;
                     }
                     long delay = ChatTaskConfig.API_RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempt);
-                    log.warn("   retry {}/{}  {}  backoff {}ms",
-                            attempt + 1, ChatTaskConfig.API_MAX_RETRIES, lastError.getMessage(), delay);
+                    log.warn("retry {}/{}  {}  url={}  backoff {}ms",
+                            attempt + 1, ChatTaskConfig.API_MAX_RETRIES, lastError.getMessage(), requestUrl, delay);
                     try { Thread.sleep(delay); } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw lastError;
                     }
                 }
+                log.error("request failed after {} retries: url={} lastError={}",
+                        ChatTaskConfig.API_MAX_RETRIES, requestUrl, lastError != null ? lastError.getMessage() : "unknown");
                 throw lastError;
             })
             .build();

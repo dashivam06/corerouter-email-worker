@@ -29,7 +29,7 @@ public class ChatTaskConfig {
     public static final String API_BILLING_USAGE_ENDPOINT = API_BASE_URL + "/api/v1/admin/billing/usage";
     public static final String BILLING_TYPE_INPUT = "INPUT_TOKENS";
     public static final String BILLING_TYPE_OUTPUT = "OUTPUT_TOKENS";
-    public static final String API_TASK_STATUS_ENDPOINT = API_BASE_URL + "/v1/tasks/status";
+    public static final String API_TASK_STATUS_ENDPOINT = API_BASE_URL + "/api/v1/tasks/status";
 
     // ── vLLM ───────────────────────────────────────────────────────
     public static final int VLLM_TIMEOUT_SECONDS = Integer.parseInt(env("VLLM_TIMEOUT", "120"));
