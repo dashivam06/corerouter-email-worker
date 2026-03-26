@@ -8,15 +8,17 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ApiClient {
 
-    private static final Logger log = LoggerFactory.getLogger(ApiClient.class);
+    private static final TelemetryClient telemetryClient = new TelemetryClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     public static final MediaType JSON = MediaType.get(ChatTaskConfig.CONTENT_TYPE_JSON);
 
@@ -37,15 +39,27 @@ public class ApiClient {
                         lastError = e;
                     }
                     long delay = ChatTaskConfig.API_RETRY_BASE_DELAY_MS * (long) Math.pow(2, attempt);
-                    log.warn("retry {}/{}  {}  url={}  backoff {}ms",
-                            attempt + 1, ChatTaskConfig.API_MAX_RETRIES, lastError.getMessage(), requestUrl, delay);
+                    
+                    Map<String, String> retryProps = new HashMap<>();
+                    retryProps.put("attempt", String.valueOf(attempt + 1));
+                    retryProps.put("maxRetries", String.valueOf(ChatTaskConfig.API_MAX_RETRIES));
+                    retryProps.put("error", lastError.getMessage());
+                    retryProps.put("url", requestUrl);
+                    retryProps.put("s", String.valueOf(delay));
+                    telemetryClient.trackTrace("API Retry", SeverityLevel.Warning, retryProps);
+
                     try { Thread.sleep(delay); } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw lastError;
                     }
                 }
-                log.error("request failed after {} retries: url={} lastError={}",
-                        ChatTaskConfig.API_MAX_RETRIES, requestUrl, lastError != null ? lastError.getMessage() : "unknown");
+                
+                Map<String, String> errorProps = new HashMap<>();
+                errorProps.put("maxRetries", String.valueOf(ChatTaskConfig.API_MAX_RETRIES));
+                errorProps.put("url", requestUrl);
+                errorProps.put("error", lastError != null ? lastError.getMessage() : "unknown");
+                telemetryClient.trackException(lastError, errorProps, null);
+                
                 throw lastError;
             })
             .build();
@@ -54,6 +68,14 @@ public class ApiClient {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(ChatTaskConfig.VLLM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+            .build();
+
+        // Heartbeat uses fast timeouts and no interceptor retries so the 30s schedule is not delayed.
+        private static final OkHttpClient heartbeatClient = new OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .writeTimeout(5, TimeUnit.SECONDS)
+            .callTimeout(10, TimeUnit.SECONDS)
             .build();
 
     private ApiClient() {}
@@ -91,12 +113,44 @@ public class ApiClient {
         }
     }
 
+    public static void postInternal(String url, String jsonBody) throws IOException {
+        Request req = new Request.Builder().url(url)
+                .post(RequestBody.create(jsonBody, JSON)).headers(requiredAuthHeaders()).build();
+        try (Response res = apiClient.newCall(req).execute()) {
+            if (!res.isSuccessful()) {
+                String body = res.body() != null ? res.body().string() : "";
+                throw new IOException("POST failed (HTTP " + res.code() + "): " + body);
+            }
+        }
+    }
+
+    public static void postInternalHeartbeat(String url, String jsonBody) throws IOException {
+        Request req = new Request.Builder().url(url)
+                .post(RequestBody.create(jsonBody, JSON)).headers(requiredAuthHeaders()).build();
+        try (Response res = heartbeatClient.newCall(req).execute()) {
+            if (!res.isSuccessful()) {
+                String body = res.body() != null ? res.body().string() : "";
+                throw new IOException("Heartbeat POST failed (HTTP " + res.code() + ") body=" + body);
+            }
+        }
+    }
+
     private static okhttp3.Headers authHeaders() {
         okhttp3.Headers.Builder builder = new okhttp3.Headers.Builder();
         String workerSecret = Env.get(ChatTaskConfig.ENV_WORKER_SECRET);
         if (workerSecret != null && !workerSecret.isBlank()) {
             builder.add(ChatTaskConfig.HEADER_X_SERVICE_TOKEN, workerSecret);
         }
+        return builder.build();
+    }
+
+    private static okhttp3.Headers requiredAuthHeaders() {
+        okhttp3.Headers.Builder builder = new okhttp3.Headers.Builder();
+        String workerSecret = Env.get(ChatTaskConfig.ENV_WORKER_SECRET);
+        if (workerSecret == null || workerSecret.isBlank()) {
+            throw new IllegalStateException("Missing required env var: " + ChatTaskConfig.ENV_WORKER_SECRET);
+        }
+        builder.add(ChatTaskConfig.HEADER_X_SERVICE_TOKEN, workerSecret);
         return builder.build();
     }
 

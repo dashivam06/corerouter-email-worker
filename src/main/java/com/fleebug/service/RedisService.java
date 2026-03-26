@@ -1,17 +1,18 @@
 package com.fleebug.service;
 
 import com.fleebug.config.RedisConfig;
-
+import com.microsoft.applicationinsights.TelemetryClient;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.StreamEntryID;
-
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RedisService {
 
     private final JedisPool jedisPool = RedisConfig.getJedisPool();
+    private final TelemetryClient telemetryClient = new TelemetryClient();
 
     public void publishToQueue(String queueName, String message) {
         try (Jedis jedis = jedisPool.getResource()) {
@@ -29,7 +30,10 @@ public class RedisService {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.get(key);
         } catch (Exception e) {
-            System.err.println("[redis] GET failed for key " + key + ": " + e.getMessage());
+            Map<String, String> properties = new HashMap<>();
+            properties.put("key", key);
+            properties.put("error", e.getMessage());
+            telemetryClient.trackException(e, properties, null);
             return null;
         }
     }

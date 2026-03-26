@@ -1,10 +1,18 @@
 package com.fleebug.workers;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
+
 import com.fleebug.config.RedisConfig;
 import com.fleebug.dto.email.EmailJobDto;
 import com.fleebug.service.EmailService;
+import com.fleebug.service.HeartbeatService;
+import com.fleebug.utility.Env;
 import com.fleebug.utility.MessageEncryption;
 
 import redis.clients.jedis.Jedis;
@@ -12,10 +20,25 @@ import redis.clients.jedis.JedisPool;
 
 public class OtpEmailWorker {
 
+    private static final TelemetryClient telemetryClient = new TelemetryClient();
+
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final EmailService emailService = new EmailService();
+    private static final String API_BASE_URL = Env.get("API_BASE_URL");
+    private static final HeartbeatService heartbeatService =
+        new HeartbeatService(API_BASE_URL, "otp-email-worker");
 
     public static void main(String[] args) throws IOException {
+
+        String cs = System.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+		if (cs == null || cs.isBlank()) {
+			System.err.println("Application Insights not configured: missing env var APPLICATIONINSIGHTS_CONNECTION_STRING. Continuing with local logging only.");
+		} 
+        
+        heartbeatService.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(heartbeatService::stop));
 
         try (Jedis jedis = jedisPool.getResource()) {
 
@@ -24,7 +47,6 @@ public class OtpEmailWorker {
                 List<String> job = jedis.brpop(3000, "queue:email");
 
                 if (job == null) {
-                    // No job available, loop again
                     continue;
                 }
 
@@ -36,26 +58,32 @@ public class OtpEmailWorker {
                     EmailJobDto emailJob = EmailJobDto.fromJson(decryptedValue);
 
                     try {
-
-                    String username = emailJob.getEmail().split("@")[0]; // Extract username from email
-
-                    emailService.sendOtpEmail(emailJob.getEmail(), username , emailJob.getOtp(),emailJob.getOtpTtlMinutes());
-              
-                    System.out.println("Sent OTP to " + emailJob.getEmail());
-                } catch (Exception e) {
-                    System.err.println("Failed to send OTP to " + emailJob.getEmail());
-                    e.printStackTrace();
-                }
-
+                        String username = emailJob.getEmail().split("@")[0];
+                        emailService.sendOtpEmail(emailJob.getEmail(), username, emailJob.getOtp(), emailJob.getOtpTtlMinutes());
+                        
+                        Map<String, String> properties = new HashMap<>();
+                        properties.put("email", emailJob.getEmail());
+                        properties.put("ttlMin", String.valueOf(emailJob.getOtpTtlMinutes()));
+                        telemetryClient.trackTrace("otp sent", SeverityLevel.Information, properties);
+                        
+                    } catch (Exception e) {
+                        Map<String, String> properties = new HashMap<>();
+                        properties.put("email", emailJob.getEmail());
+                        properties.put("error", e.getMessage());
+                        telemetryClient.trackException(e, properties, null);
+                    }
 
                 } catch (IOException e) {
-                    System.err.println("Invalid email job JSON: " + value);
-                    e.printStackTrace();
-                    continue; 
+                     Map<String, String> properties = new HashMap<>();
+                     properties.put("valueLength", String.valueOf(value != null ? value.length() : 0));
+                     properties.put("error", e.getMessage());
+                     telemetryClient.trackException(e, properties, null);
                 }
 
             }
 
+        } finally {
+            heartbeatService.stop();
         }
     }
 

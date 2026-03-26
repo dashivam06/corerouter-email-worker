@@ -1,5 +1,9 @@
 package com.fleebug.service;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fleebug.config.ChatTaskConfig;
 import com.fleebug.dto.task.model.BillingConfigDto;
@@ -8,21 +12,16 @@ import com.fleebug.dto.task.model.ModelDto;
 import com.fleebug.dto.task.vllm.*;
 import com.fleebug.utility.ApiClient;
 import com.fleebug.utility.Env;
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class VllmChatCompletionService {
 
-    private static final Logger log = LoggerFactory.getLogger(VllmChatCompletionService.class);
+    private final TelemetryClient telemetryClient = new TelemetryClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final RedisService redis = new RedisService();
 
@@ -31,11 +30,16 @@ public class VllmChatCompletionService {
         String cached = redis.getFromCache(cacheKey);
 
         if (cached != null) {
-            log.info("│   cache      model:{} (hit)", modelId);
+            Map<String, String> properties = new HashMap<>();
+            properties.put("modelId", modelId);
+            telemetryClient.trackTrace("Cache Hit: Model", SeverityLevel.Verbose, properties);
             return ModelDto.fromJson(cached);
         }
 
-        log.info("│   cache      model:{} (miss) — fetching", modelId);
+        Map<String, String> properties = new HashMap<>();
+        properties.put("modelId", modelId);
+        telemetryClient.trackTrace("Cache Miss: Model", SeverityLevel.Verbose, properties);
+        
         String url = ChatTaskConfig.API_MODELS_ENDPOINT + modelId;
         String json = ApiClient.get(url);
         redis.saveToCache(cacheKey, json, ChatTaskConfig.CACHE_TTL_SECONDS, TimeUnit.SECONDS);
@@ -48,17 +52,25 @@ public class VllmChatCompletionService {
 
         try {
             if (cached != null) {
-                log.info("│   cache      billing:{} (hit)", modelId);
+                Map<String, String> properties = new HashMap<>();
+                properties.put("modelId", modelId);
+                telemetryClient.trackTrace("Cache Hit: Billing", SeverityLevel.Verbose, properties);
                 return BillingConfigDto.fromJson(cached);
             }
 
-            log.info("│   cache      billing:{} (miss) — fetching", modelId);
+            Map<String, String> properties = new HashMap<>();
+            properties.put("modelId", modelId);
+            telemetryClient.trackTrace("Cache Miss: Billing", SeverityLevel.Verbose, properties);
+            
             String url = ChatTaskConfig.API_BILLING_CONFIG_ENDPOINT + modelId;
             String json = ApiClient.get(url);
             redis.saveToCache(cacheKey, json, ChatTaskConfig.CACHE_TTL_SECONDS, TimeUnit.SECONDS);
             return BillingConfigDto.fromJson(json);
         } catch (Exception e) {
-            log.warn("│   billing    config unavailable — {}", e.getMessage());
+            Map<String, String> properties = new HashMap<>();
+            properties.put("modelId", modelId);
+            properties.put("error", e.getMessage());
+            telemetryClient.trackException(e, properties, null);
             return new BillingConfigDto(null);
         }
     }
@@ -71,7 +83,11 @@ public class VllmChatCompletionService {
         TaskStatusUpdateDto body = new TaskStatusUpdateDto(taskId, status, result, usageMetadata);
         String url = ChatTaskConfig.API_TASK_STATUS_ENDPOINT;
         ApiClient.patch(url, body.toJson());
-        log.info("│   status     → {}", status);
+        
+        Map<String, String> properties = new HashMap<>();
+        properties.put("taskId", taskId);
+        properties.put("status", status);
+        telemetryClient.trackTrace("Status Updated", SeverityLevel.Information, properties);
     }
 
     public void recordBillingUsage(String taskId, int promptTokens, int completionTokens) {
@@ -79,13 +95,27 @@ public class VllmChatCompletionService {
         try {
             BillingUsageDto input = new BillingUsageDto(taskId, ChatTaskConfig.BILLING_TYPE_INPUT, promptTokens);
             ApiClient.post(url, input.toJson());
-            log.info("│   billing    prompt={}", promptTokens);
+            
+            Map<String, String> inProps = new HashMap<>();
+            inProps.put("taskId", taskId);
+            inProps.put("tokens", String.valueOf(promptTokens));
+            inProps.put("type", "input");
+            telemetryClient.trackTrace("Billing Recorded", SeverityLevel.Information, inProps);
 
             BillingUsageDto output = new BillingUsageDto(taskId, ChatTaskConfig.BILLING_TYPE_OUTPUT, completionTokens);
             ApiClient.post(url, output.toJson());
-            log.info("│   billing    completion={}", completionTokens);
+            
+            Map<String, String> outProps = new HashMap<>();
+            outProps.put("taskId", taskId);
+            outProps.put("tokens", String.valueOf(completionTokens));
+            outProps.put("type", "output");
+            telemetryClient.trackTrace("Billing Recorded", SeverityLevel.Information, outProps);
+            
         } catch (IOException e) {
-            log.error("│   billing    recording failed — {}", e.getMessage());
+            Map<String, String> properties = new HashMap<>();
+            properties.put("taskId", taskId);
+            properties.put("error", e.getMessage());
+            telemetryClient.trackException(e, properties, null);
         }
     }
 
@@ -116,10 +146,11 @@ public class VllmChatCompletionService {
         String requestJson = MAPPER.writeValueAsString(unifiedRequest);
         String finalUrl = endpointUrl + ChatTaskConfig.VLLM_CHAT_COMPLETIONS_PATH; // Standard chat endpoint
 
-        log.info("│   payload    type={} len={} model={}", 
-                "Standard/Chat", 
-                requestJson.length(), 
-                modelFullname);
+        Map<String, String> payloadProps = new HashMap<>();
+        payloadProps.put("type", "Standard/Chat");
+        payloadProps.put("len", String.valueOf(requestJson.length()));
+        payloadProps.put("model", modelFullname);
+        telemetryClient.trackTrace("Payload Prepared", SeverityLevel.Verbose, payloadProps);
 
         RequestBody reqBody = RequestBody.create(requestJson, ApiClient.JSON);
 

@@ -22,6 +22,8 @@ public class ChatTaskConfig {
 
     // ── Spring API ─────────────────────────────────────────────────
     public static final String API_BASE_URL = env("API_BASE_URL", "https://corerouter.me");
+    public static final String LOCALHOST_BASE_URL = env("LOCALHOST_BASE_URL", "http://localhost:7777");
+
     
     // API Endpoints
     public static final String API_MODELS_ENDPOINT = API_BASE_URL + "/api/v1/admin/models/";

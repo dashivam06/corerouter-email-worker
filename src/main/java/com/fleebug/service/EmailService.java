@@ -3,6 +3,7 @@ package com.fleebug.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,12 +14,15 @@ import com.azure.communication.email.models.EmailSendResult;
 import com.azure.core.util.polling.PollResponse;
 import com.azure.core.util.polling.SyncPoller;
 import com.fleebug.config.MailConfig;
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 public class EmailService {
 
     private final static String VERIFICATION_EMAIL_TEMPLETE_FILENAME = "verify-email.html";
 
     private final static EmailClient emailClient = MailConfig.getEmailClient();
+    private final TelemetryClient telemetryClient = new TelemetryClient();
 
     public void sendEmail(String from, List<String> to, String subject, String htmlBody, String textBody) {
         EmailMessage message = new EmailMessage()
@@ -32,10 +36,17 @@ public class EmailService {
             SyncPoller<EmailSendResult, EmailSendResult> poller = emailClient.beginSend(message);
             PollResponse<EmailSendResult> response = poller.waitForCompletion();
             EmailSendResult result = response.getValue();
-            System.out.println(
-                    "Email successfully queued for delivery. Recipients: " + to + ", Message ID: " + result.getId());
+            
+            Map<String, String> properties = new HashMap<>();
+            properties.put("recipients", to.toString());
+            properties.put("messageId", result.getId());
+            telemetryClient.trackTrace("Email successfully queued for delivery", SeverityLevel.Information, properties);
+            
         } catch (Exception ex) {
-            System.err.println("Failed to queue email: " + ex.getMessage());
+            Map<String, String> properties = new HashMap<>();
+            properties.put("recipients", to.toString());
+            properties.put("error", ex.getMessage());
+            telemetryClient.trackException(ex, properties, null);
         }
     }
 
