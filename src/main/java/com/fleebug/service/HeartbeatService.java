@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.fleebug.constants.PathConfig;
 import com.fleebug.utility.ApiClient;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
@@ -20,7 +21,6 @@ import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 public class HeartbeatService {
 
     private final TelemetryClient telemetryClient = new TelemetryClient();
-    private static final String HEARTBEAT_PATH = "/api/v1/internal/worker/heartbeat";
     private static final String ENV_HEARTBEAT_INSTANCE_ID = "HEARTBEAT_INSTANCE_ID";
     private static final String STATUS_UP = "UP";
 
@@ -31,7 +31,7 @@ public class HeartbeatService {
     private final AtomicLong sequence = new AtomicLong(0);
 
     public HeartbeatService(String baseUrl, String serviceName) {
-        this.heartbeatUrl = normalizeBaseUrl(baseUrl) + HEARTBEAT_PATH;
+        this.heartbeatUrl = normalizeBaseUrl(baseUrl) + PathConfig.API_HEARTBEAT_ENDPOINT;
         this.serviceName = serviceName;
         this.instanceId = resolveInstanceId();
         this.scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {

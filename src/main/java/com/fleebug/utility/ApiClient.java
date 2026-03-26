@@ -2,7 +2,8 @@ package com.fleebug.utility;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fleebug.config.ChatTaskConfig;
+import com.fleebug.constants.ChatTaskConfig;
+
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

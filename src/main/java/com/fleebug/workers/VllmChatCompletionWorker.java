@@ -8,8 +8,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fleebug.config.RedisConfig;
-import com.fleebug.config.ChatTaskConfig;
-
+import com.fleebug.constants.ChatTaskConfig;
+import com.fleebug.constants.PathConfig;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
@@ -35,7 +35,7 @@ public class VllmChatCompletionWorker {
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final VllmChatCompletionService service = new VllmChatCompletionService();
         private static final HeartbeatService heartbeatService =
-            new HeartbeatService(ChatTaskConfig.API_BASE_URL, "vllm-chat-completion-worker");
+            new HeartbeatService(PathConfig.API_BASE_URL, "vllm-chat-completion-worker");
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(ChatTaskConfig.WORKER_THREADS);
 
@@ -49,7 +49,7 @@ public class VllmChatCompletionWorker {
 		if (cs == null || cs.isBlank()) {
 			System.err.println("Application Insights not configured: missing env var APPLICATIONINSIGHTS_CONNECTION_STRING. Continuing with local logging only.");
 		} 
-        
+
         ensureConsumerGroup();
         heartbeatService.start();
 

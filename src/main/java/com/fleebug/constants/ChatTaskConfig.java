@@ -1,4 +1,4 @@
-package com.fleebug.config;
+package com.fleebug.constants;
 
 import com.fleebug.utility.Env;
 
@@ -20,26 +20,13 @@ public class ChatTaskConfig {
     public static final String CONSUMER_GROUP = env("CONSUMER_GROUP", "worker-group");
     public static final String CONSUMER_NAME = env("CONSUMER_NAME", "worker-1");
 
-    // ── Spring API ─────────────────────────────────────────────────
-    public static final String API_BASE_URL = env("API_BASE_URL", "https://corerouter.me");
-    public static final String LOCALHOST_BASE_URL = env("LOCALHOST_BASE_URL", "http://localhost:7777");
-
     
-    // API Endpoints
-    public static final String API_MODELS_ENDPOINT = API_BASE_URL + "/api/v1/admin/models/";
-    public static final String API_BILLING_CONFIG_ENDPOINT = API_BASE_URL + "/api/v1/admin/billing/configs/model/";
-    public static final String API_BILLING_USAGE_ENDPOINT = API_BASE_URL + "/api/v1/admin/billing/usage";
     public static final String BILLING_TYPE_INPUT = "INPUT_TOKENS";
     public static final String BILLING_TYPE_OUTPUT = "OUTPUT_TOKENS";
-    public static final String API_TASK_STATUS_ENDPOINT = API_BASE_URL + "/api/v1/tasks/status";
 
     // ── vLLM ───────────────────────────────────────────────────────
     public static final int VLLM_TIMEOUT_SECONDS = Integer.parseInt(env("VLLM_TIMEOUT", "120"));
     
-    // vLLM Paths
-    public static final String VLLM_COMPLETIONS_PATH = "/v1/completions";
-    public static final String VLLM_CHAT_COMPLETIONS_PATH = "/v1/chat/completions";
-
     // ── Cache ──────────────────────────────────────────────────────
     public static final int CACHE_TTL_SECONDS = Integer.parseInt(env("CACHE_TTL", "3600"));
 

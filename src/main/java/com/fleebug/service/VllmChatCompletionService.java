@@ -5,7 +5,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fleebug.config.ChatTaskConfig;
+import com.fleebug.constants.ChatTaskConfig;
+import com.fleebug.constants.PathConfig;
 import com.fleebug.dto.task.model.BillingConfigDto;
 import com.fleebug.dto.task.model.BillingUsageDto;
 import com.fleebug.dto.task.model.ModelDto;
@@ -40,7 +41,7 @@ public class VllmChatCompletionService {
         properties.put("modelId", modelId);
         telemetryClient.trackTrace("Cache Miss: Model", SeverityLevel.Verbose, properties);
         
-        String url = ChatTaskConfig.API_MODELS_ENDPOINT + modelId;
+        String url = PathConfig.API_MODELS_ENDPOINT + modelId;
         String json = ApiClient.get(url);
         redis.saveToCache(cacheKey, json, ChatTaskConfig.CACHE_TTL_SECONDS, TimeUnit.SECONDS);
         return ModelDto.fromJson(json);
@@ -62,7 +63,7 @@ public class VllmChatCompletionService {
             properties.put("modelId", modelId);
             telemetryClient.trackTrace("Cache Miss: Billing", SeverityLevel.Verbose, properties);
             
-            String url = ChatTaskConfig.API_BILLING_CONFIG_ENDPOINT + modelId;
+            String url = PathConfig.API_BILLING_CONFIG_ENDPOINT + modelId;
             String json = ApiClient.get(url);
             redis.saveToCache(cacheKey, json, ChatTaskConfig.CACHE_TTL_SECONDS, TimeUnit.SECONDS);
             return BillingConfigDto.fromJson(json);
@@ -81,7 +82,7 @@ public class VllmChatCompletionService {
 
     public void updateTaskStatus(String taskId, String status, Object result, String usageMetadata) throws IOException {
         TaskStatusUpdateDto body = new TaskStatusUpdateDto(taskId, status, result, usageMetadata);
-        String url = ChatTaskConfig.API_TASK_STATUS_ENDPOINT;
+        String url = PathConfig.API_TASK_STATUS_ENDPOINT;
         ApiClient.patch(url, body.toJson());
         
         Map<String, String> properties = new HashMap<>();
@@ -91,7 +92,7 @@ public class VllmChatCompletionService {
     }
 
     public void recordBillingUsage(String taskId, int promptTokens, int completionTokens) {
-        String url = ChatTaskConfig.API_BILLING_USAGE_ENDPOINT;
+        String url = PathConfig.API_BILLING_USAGE_ENDPOINT;
         try {
             BillingUsageDto input = new BillingUsageDto(taskId, ChatTaskConfig.BILLING_TYPE_INPUT, promptTokens);
             ApiClient.post(url, input.toJson());
@@ -144,7 +145,7 @@ public class VllmChatCompletionService {
         }
         
         String requestJson = MAPPER.writeValueAsString(unifiedRequest);
-        String finalUrl = endpointUrl + ChatTaskConfig.VLLM_CHAT_COMPLETIONS_PATH; // Standard chat endpoint
+        String finalUrl = endpointUrl + PathConfig.VLLM_CHAT_COMPLETIONS_PATH; // Standard chat endpoint
 
         Map<String, String> payloadProps = new HashMap<>();
         payloadProps.put("type", "Standard/Chat");

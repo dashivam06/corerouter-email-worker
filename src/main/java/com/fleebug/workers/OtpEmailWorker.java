@@ -9,10 +9,10 @@ import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 import com.fleebug.config.RedisConfig;
+import com.fleebug.constants.PathConfig;
 import com.fleebug.dto.email.EmailJobDto;
 import com.fleebug.service.EmailService;
 import com.fleebug.service.HeartbeatService;
-import com.fleebug.utility.Env;
 import com.fleebug.utility.MessageEncryption;
 
 import redis.clients.jedis.Jedis;
@@ -24,7 +24,7 @@ public class OtpEmailWorker {
 
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final EmailService emailService = new EmailService();
-    private static final String API_BASE_URL = Env.get("API_BASE_URL");
+    private static final String API_BASE_URL = PathConfig.API_BASE_URL;
     private static final HeartbeatService heartbeatService =
         new HeartbeatService(API_BASE_URL, "otp-email-worker");
 
@@ -35,7 +35,7 @@ public class OtpEmailWorker {
 		if (cs == null || cs.isBlank()) {
 			System.err.println("Application Insights not configured: missing env var APPLICATIONINSIGHTS_CONNECTION_STRING. Continuing with local logging only.");
 		} 
-        
+
         heartbeatService.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(heartbeatService::stop));

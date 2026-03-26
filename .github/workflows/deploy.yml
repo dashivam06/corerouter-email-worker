@@ -85,14 +85,14 @@ jobs:
               echo ""
               echo "========== Deploying Workers =========="
 
-              # ---------- OTP WORKER ----------
-              echo "Deploying Corerouter Workers..."
+              # ---------- OTP EMAIL WORKER ----------
+              echo "Deploying OTP Email Worker..."
 
-              sudo docker stop corerouter-worker || true
-              sudo docker rm corerouter-worker || true
+              sudo docker stop corerouter-otp-email-worker || true
+              sudo docker rm corerouter-otp-email-worker || true
 
               sudo docker run -d \
-                --name corerouter-worker \
+                --name corerouter-otp-email-worker \
                 --restart unless-stopped \
                 -v $LOG_DIR:/app/logs \
                 -e WORKER_CLASS=com.fleebug.workers.OtpEmailWorker \
@@ -103,16 +103,18 @@ jobs:
                 -e REDIS_PORT="${{ secrets.REDIS_PORT }}" \
                 -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
                 -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+                -e API_BASE_URL="$API_BASE_URL" \
+                -e APPLICATIONINSIGHTS_CONNECTION_STRING="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
                 corerouter-workers:latest
 
-              echo "OTP Worker started"
+              echo "OTP Email Worker started"
 
-              # ---------- VLLM WORKER ----------
-              sudo docker stop corerouter-vllm-worker || true
-              sudo docker rm corerouter-vllm-worker || true
+              # ---------- VLLM CHAT COMPLETION WORKER ----------
+              sudo docker stop corerouter-vllm-chat-completion-worker || true
+              sudo docker rm corerouter-vllm-chat-completion-worker || true
 
               sudo docker run -d \
-                --name corerouter-vllm-worker \
+                --name corerouter-vllm-chat-completion-worker \
                 --restart unless-stopped \
                 -v $LOG_DIR:/app/logs \
                 -e WORKER_CLASS=com.fleebug.workers.VllmChatCompletionWorker \
@@ -121,13 +123,15 @@ jobs:
                 -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
                 -e API_BASE_URL="$API_BASE_URL" \
                 -e WORKER_SECRET="$WORKER_SECRET" \
+                -e APPLICATIONINSIGHTS_CONNECTION_STRING="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
+                -e API_BASE_URL="$API_BASE_URL" \
                 corerouter-workers:latest
 
-              echo "vLLM Worker started"
+              echo "vLLM Chat Completion Worker started"
 
               echo ""
               echo "========== Deployment Complete =========="
 
-              sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep -E "NAMES|corerouter-(vllm-)?worker" || true
+              sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep -E "NAMES|corerouter-(vllm-chat-completion-|otp-email-)?worker" || true
 
             } 2>&1 | tee -a $DEPLOY_LOG
