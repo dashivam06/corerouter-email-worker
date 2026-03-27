@@ -34,7 +34,6 @@ public class VllmTaskDto {
      * Build a VllmTaskDto directly from the flat stream fields.
      * The "payload" field arrives as a JSON string and must be parsed into a Map.
      */
-    @SuppressWarnings("unchecked")
     public static VllmTaskDto fromStreamFields(Map<String, String> fields) throws IOException {
         VllmTaskDto dto = new VllmTaskDto();
         dto.taskId = fields.get("taskId");

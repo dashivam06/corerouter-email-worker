@@ -87,6 +87,7 @@ public class HeartbeatService {
             properties.put("error", e.getMessage());
             
             telemetryClient.trackException(new Exception("Heartbeat failure: " + e.getMessage(), e), properties, null);
+            System.err.println("Heartbeat failure for " + serviceName + " seq=" + seq + " after " + took + "ms: " + e.getMessage());
         }
     }
 

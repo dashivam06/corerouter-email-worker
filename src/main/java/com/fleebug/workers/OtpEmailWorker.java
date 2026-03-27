@@ -24,9 +24,8 @@ public class OtpEmailWorker {
 
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final EmailService emailService = new EmailService();
-    private static final String API_BASE_URL = PathConfig.API_BASE_URL;
     private static final HeartbeatService heartbeatService =
-        new HeartbeatService(API_BASE_URL, "otp-email-worker");
+        new HeartbeatService(PathConfig.API_HEARTBEAT_BASE_URL, "otp-email-worker");
 
     public static void main(String[] args) throws IOException {
 

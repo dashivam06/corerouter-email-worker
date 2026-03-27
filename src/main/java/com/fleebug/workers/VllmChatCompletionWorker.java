@@ -35,7 +35,7 @@ public class VllmChatCompletionWorker {
     private static final JedisPool jedisPool = RedisConfig.getJedisPool();
     private static final VllmChatCompletionService service = new VllmChatCompletionService();
         private static final HeartbeatService heartbeatService =
-            new HeartbeatService(PathConfig.API_BASE_URL, "vllm-chat-completion-worker");
+            new HeartbeatService(PathConfig.API_HEARTBEAT_BASE_URL, "vllm-chat-completion-worker");
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(ChatTaskConfig.WORKER_THREADS);
 
