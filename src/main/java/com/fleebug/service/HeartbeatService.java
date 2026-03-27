@@ -51,8 +51,10 @@ public class HeartbeatService {
         properties.put("heartbeatUrl", heartbeatUrl);
         properties.put("interval", "30s");
         telemetryClient.trackTrace("Heartbeat start", SeverityLevel.Information, properties);
+
+        sendHeartbeatSafely();
         
-        scheduler.scheduleAtFixedRate(this::sendHeartbeatSafely, 0, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendHeartbeatSafely, 30, 30, TimeUnit.SECONDS);
     }
 
     public void stop() {
