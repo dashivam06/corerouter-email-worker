@@ -9,10 +9,12 @@ import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 import com.fleebug.config.RedisConfig;
+import com.fleebug.constants.ChatTaskConfig;
 import com.fleebug.constants.PathConfig;
 import com.fleebug.dto.email.EmailJobDto;
 import com.fleebug.service.EmailService;
 import com.fleebug.service.HeartbeatService;
+import com.fleebug.utility.Env;
 import com.fleebug.utility.MessageEncryption;
 
 import redis.clients.jedis.Jedis;
@@ -34,6 +36,11 @@ public class OtpEmailWorker {
 		if (cs == null || cs.isBlank()) {
 			System.err.println("Application Insights not configured: missing env var APPLICATIONINSIGHTS_CONNECTION_STRING. Continuing with local logging only.");
 		} 
+
+        String workerSecret = Env.get(ChatTaskConfig.ENV_WORKER_SECRET);
+        System.out.println("OTP worker heartbeat base URL: " + PathConfig.API_HEARTBEAT_BASE_URL);
+        System.out.println("OTP worker heartbeat endpoint: " + PathConfig.API_HEARTBEAT_ENDPOINT);
+        System.out.println("OTP worker WORKER_SECRET present: " + (workerSecret != null && !workerSecret.isBlank()));
 
         heartbeatService.start();
 
