@@ -103,7 +103,6 @@ jobs:
                 -e REDIS_PORT="${{ secrets.REDIS_PORT }}" \
                 -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
                 -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
-                -e API_BASE_URL="$API_BASE_URL" \
                 -e APPLICATIONINSIGHTS_CONNECTION_STRING="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}" \
                 corerouter-workers:latest
 
