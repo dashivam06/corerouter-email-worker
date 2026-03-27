@@ -4,7 +4,7 @@ import com.fleebug.utility.Env;
 
 public class PathConfig {
 
-    public static final String API_BASE_URL = env("API_BASE_URL", "https://corerouter.me");
+    public static final String API_BASE_URL = env("API_BASE_URL", "https://api.corerouter.me");
     public static final String API_HEARTBEAT_BASE_URL = env("API_HEARTBEAT_BASE_URL", API_BASE_URL);
     public static final String LOCALHOST_BASE_URL = env("LOCALHOST_BASE_URL", "http://localhost:7777");
 
