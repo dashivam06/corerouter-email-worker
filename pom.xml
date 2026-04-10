@@ -15,7 +15,7 @@
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mainClass>com.fleebug.workers.OtpEmailWorker</mainClass>
+        <mainClass>com.fleebug.workers.EmailWorker</mainClass>
 
     </properties>
 
@@ -123,7 +123,7 @@
         <profile>
             <id>email</id>
             <properties>
-                <mainClass>com.fleebug.workers.OtpEmailWorker</mainClass>
+                <mainClass>com.fleebug.workers.EmailWorker</mainClass>
             </properties>
         </profile>
 

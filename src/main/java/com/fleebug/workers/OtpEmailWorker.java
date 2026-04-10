@@ -65,10 +65,16 @@ public class OtpEmailWorker {
 
                     try {
                         String username = emailJob.getEmail().split("@")[0];
-                        emailService.sendOtpEmail(emailJob.getEmail(), username, emailJob.getOtp(), emailJob.getOtpTtlMinutes());
+                        emailService.sendOtpEmail(
+                            emailJob.getEmail(),
+                            username,
+                            emailJob.getOtp(),
+                            emailJob.getOtpTtlMinutes(),
+                            emailJob.getPurpose());
                         
                         Map<String, String> properties = new HashMap<>();
                         properties.put("email", emailJob.getEmail());
+                        properties.put("purpose", emailJob.getPurpose());
                         properties.put("ttlMin", String.valueOf(emailJob.getOtpTtlMinutes()));
                         telemetryClient.trackTrace("otp sent", SeverityLevel.Information, properties);
                         
